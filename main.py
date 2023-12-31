@@ -5,6 +5,10 @@ from pkg.video_reader.video_reader import VideoReader
 from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 import numpy as np
+import tensorflow as tf
+
+
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 
 # Initialize MediaPipe
@@ -14,7 +18,7 @@ model_path = './model/pose_landmarker_heavy.task'
 # video_path = './dataset/pushups/video_2023-10-07_09-37-41.mp4'
 # video_path = './dataset/pushups/video_2023-10-08_17-25-11.mp4'
 # video_path = './dataset/squat/video_2023-10-08_17-25-31.mp4'
-video_path = './dataset/combine/combine_single.mp4'
+video_path = 'data/dataset/combine/combine_single.mp4'
 output_path = './results/combine_single.mp4'
 
 def print_hi(name):
@@ -118,5 +122,6 @@ if __name__ == '__main__':
                 break
 
     # Release the VideoCapture and close the OpenCV window
-    cap.release()
+    sample_video_reader.release()
+    # cap.release()
     cv2.destroyAllWindows()
