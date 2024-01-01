@@ -5,7 +5,8 @@ class VideoReader:
     def __init__(self, filename):
         self.cap = cv2.VideoCapture(filename)
         self._total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self._current_frame = 0
+        self._current_frame_counter = 0
+        self._current_frame: cv2.typing.MatLike
 
     def read_frame(self):
         """ Read a frame """
@@ -13,10 +14,16 @@ class VideoReader:
             ret, frame = self.cap.read()
             if ret is False or frame is None:
                 return None
-            self._current_frame += 1
+            self._current_frame_counter += 1
         else:
             return None
         return frame
+
+    def next_frame(self):
+        self._current_frame = self.read_frame()
+        if self._current_frame is None:
+            return None
+        return self._current_frame_counter
 
     def read_n_frames(self, num_frames=1):
         """ Read n frames """
@@ -27,7 +34,7 @@ class VideoReader:
                 if ret is False or frame is None:
                     return None
                 frames_list.append(frame)
-                self._current_frame += 1
+                self._current_frame_counter += 1
             else:
                 return None
         return frames_list
@@ -43,6 +50,10 @@ class VideoReader:
     def get_frame_height(self):
         """ Get height of a frame """
         return self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+    def get_frame_timestamp(self):
+        """ Get Frames Timestamp """
+        return self.cap.get(cv2.CAP_PROP_POS_MSEC)
 
     def get_video_fps(self):
         """ Get Frames per second of video """
