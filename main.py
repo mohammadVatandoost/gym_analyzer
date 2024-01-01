@@ -137,12 +137,35 @@ if __name__ == '__main__':
     while frame_count is not None:
         logging.info("frame is read, frame_count: %s, timestamp: %d",
                      frame_count, sample_video_reader.get_frame_timestamp())
-        contours = motion_detector.motion_detect()
-        frame = motion_detector.marks_contours(sample_video_reader.get_current_frame(), contours)
-        cv2.imshow("feed", sample_video_reader.get_current_frame())
+        try:
+            # contours = motion_detector.motion_detect()
+            # frame = motion_detector.marks_contours(sample_video_reader.get_current_frame(), contours)
+
+            # good_old, good_new, err = motion_detector.optical_flow_Lucas_Kanade()
+            # if err is not None:
+            #     logging.error(err)
+            #     frame_count = sample_video_reader.next_frame()
+            #     next_time_stamp = sample_video_reader.get_frame_timestamp()
+            #     time.sleep((next_time_stamp - time_stamp) / 1000)
+            #     time_stamp = next_time_stamp
+            #     continue
+            # frame = motion_detector.marks_flow_vectors(
+            #     sample_video_reader.get_current_frame(),
+            #     good_new,
+            #     good_old
+            # )
+
+            bgr = motion_detector.optical_flow_dense()
+            frame = cv2.add(sample_video_reader.get_current_frame(), bgr)
+
+            cv2.imshow("feed", frame)
+        except Exception as e:
+            logging.error(f"An error occurred: {e}")
+
         frame_count = sample_video_reader.next_frame()
         next_time_stamp = sample_video_reader.get_frame_timestamp()
-        time.sleep((next_time_stamp-time)/ 1000)
+        # 5 for computation delay
+        time.sleep((next_time_stamp-time_stamp-15)/ 1000)
         time_stamp = next_time_stamp
 
         # Exit the loop if 'q' is pressed
