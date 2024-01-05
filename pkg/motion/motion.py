@@ -31,13 +31,21 @@ class MotionDetection:
 
         self.hsv = np.zeros_like(self.frame)
         self.hsv[..., 1] = 255
-        self.gpu_frame = cv2.cuda_GpuMat()
-        self.gpu_frame.upload(self.frame_gray)
 
-        self.gpu_next_frame = cv2.cuda_GpuMat()
-        self.gpu_flow = cv2.cuda_FarnebackOpticalFlow.create(
-            5, 0.5, False, 15, 3, 5, 1.2, 0,
-        )
+        # resize frame
+        self.resized_frame = cv2.resize(self.frame, (960, 540))
+
+        # upload resized frame to GPU
+        self.gpu_frame = cv2.cuda_GpuMat()
+        self.gpu_frame.upload(self.resized_frame)
+
+        # convert to gray
+        self.previous_frame = cv2.cvtColor(self.resized_frame, cv2.COLOR_BGR2GRAY)
+
+        # upload pre-processed frame to GPU
+        self.gpu_previous = cv2.cuda_GpuMat()
+        self.gpu_previous.upload(self.previous_frame)
+
         # create gpu_hsv output for optical flow
         self.gpu_hsv = cv2.cuda_GpuMat(self.gpu_frame.size(), cv2.CV_32FC3)
         self.gpu_hsv_8u = cv2.cuda_GpuMat(self.gpu_frame.size(), cv2.CV_8UC3)
@@ -45,11 +53,67 @@ class MotionDetection:
         self.gpu_h = cv2.cuda_GpuMat(self.gpu_frame.size(), cv2.CV_32FC1)
         self.gpu_s = cv2.cuda_GpuMat(self.gpu_frame.size(), cv2.CV_32FC1)
         self.gpu_v = cv2.cuda_GpuMat(self.gpu_frame.size(), cv2.CV_32FC1)
-        self.gpu_s.upload(np.ones_like(self.gpu_frame, np.float32))
-        # self.optical_flow = cv2.cuda_OpticalFlow.createOpticalFlow_NVIDIA_OpticalFlow()
-        # self.optical_flow.setPreset(cv2.cuda_OpticalFlow.NVIDIA_OPTICAL_FLOW_PRESET_SLOW)
+
+        # set saturation to 1
+        self.gpu_s.upload(np.ones_like(self.previous_frame, np.float32))
 
     def dense_optical_flow_by_gpu(self):
+        frame = self.video_reader.get_current_frame()
+        # upload frame to GPU
+        self.gpu_frame.upload(frame)
+        # resize frame
+        self.gpu_frame = cv2.cuda.resize(self.gpu_frame, (960, 540))
+
+        # convert to gray
+        gpu_current = cv2.cuda.cvtColor(self.gpu_frame, cv2.COLOR_BGR2GRAY)
+
+        # create optical flow instance
+        gpu_flow = cv2.cuda_FarnebackOpticalFlow.create(
+            5, 0.5, False, 15, 3, 5, 1.2, 0,
+        )
+        # calculate optical flow
+        gpu_flow = cv2.cuda_FarnebackOpticalFlow.calc(
+            gpu_flow, self.gpu_previous, gpu_current, None,
+        )
+
+        gpu_flow_x = cv2.cuda_GpuMat(gpu_flow.size(), cv2.CV_32FC1)
+        gpu_flow_y = cv2.cuda_GpuMat(gpu_flow.size(), cv2.CV_32FC1)
+        cv2.cuda.split(gpu_flow, [gpu_flow_x, gpu_flow_y])
+
+        # convert from cartesian to polar coordinates to get magnitude and angle
+        gpu_magnitude, gpu_angle = cv2.cuda.cartToPolar(
+            gpu_flow_x, gpu_flow_y, angleInDegrees=True,
+        )
+
+        # set value to normalized magnitude from 0 to 1
+        self.gpu_v = cv2.cuda.normalize(gpu_magnitude, 0.0, 1.0, cv2.NORM_MINMAX, -1)
+
+        # get angle of optical flow
+        angle = gpu_angle.download()
+        angle *= (1 / 360.0) * (180 / 255.0)
+
+        # set hue according to the angle of optical flow
+        self.gpu_h.upload(angle)
+
+        # merge h,s,v channels
+        cv2.cuda.merge([self.gpu_h, self.gpu_s, self.gpu_v], self.gpu_hsv)
+
+        # multiply each pixel value to 255
+        self.gpu_hsv.convertTo(rtype=cv2.CV_8U, alpha=255.0, beta=0.0, dst=self.gpu_hsv_8u)
+
+        # convert hsv to bgr
+        gpu_bgr = cv2.cuda.cvtColor(self.gpu_hsv_8u, cv2.COLOR_HSV2BGR)
+
+        # send original frame from GPU back to CPU
+        frame = self.gpu_frame.download()
+
+        # send result from GPU back to CPU
+        bgr = gpu_bgr.download()
+
+        # update previous_frame value
+        self.gpu_previous = gpu_current
+
+        return frame, bgr
 
     # def optical_flow_dense(self):
     #     next_frame = self.video_reader.get_current_frame()

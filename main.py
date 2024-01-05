@@ -136,7 +136,7 @@ def read_video_file(file_path):
 
 if __name__ == '__main__':
     logging.info("log started")
-    dense_motion(video_path, "gpu")
+    # dense_motion(video_path, "gpu")
     sample_video_reader = VideoReader(video_path)
     frame_count = sample_video_reader.next_frame()
     time_stamp = sample_video_reader.get_frame_timestamp()
@@ -162,12 +162,14 @@ if __name__ == '__main__':
             #     good_old
             # )
 
-            bgr = motion_detector.optical_flow_dense()
+            # bgr = motion_detector.optical_flow_dense()
 
             # bgr = motion_detector.optical_flow_nvidia()
-            frame = cv2.add(sample_video_reader.get_current_frame(), bgr)
+            # frame = cv2.add(sample_video_reader.get_current_frame(), bgr)
 
-            cv2.imshow("feed", frame)
+            frame, bgr = motion_detector.dense_optical_flow_by_gpu()
+
+            cv2.imshow("feed", cv2.add(frame, bgr))
         except Exception as e:
             logging.error(f"An error occurred: {e}")
 
