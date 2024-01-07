@@ -1,15 +1,20 @@
 import logging
-import time
+import numpy as np
+
+from pkg.pose.movenet_prediction import movenet_predication
+
+np.finfo(np.dtype("float32"))
+np.finfo(np.dtype("float64"))
 # import mediapipe as mp
 import cv2
 
-from pkg.motion.gpu import dense_motion
+from pkg.pose.movenet import Movenet
 # from mediapipe.tasks import python
 from pkg.video_reader.video_reader import VideoReader
 from pkg.motion.motion import MotionDetection
 # from mediapipe import solutions
 # from mediapipe.framework.formats import landmark_pb2
-import numpy as np
+
 
 
 logging.basicConfig(
@@ -141,9 +146,12 @@ if __name__ == '__main__':
     frame_count = sample_video_reader.next_frame()
     time_stamp = sample_video_reader.get_frame_timestamp()
     motion_detector = MotionDetection(sample_video_reader)
+    movenet = Movenet(sample_video_reader)
+    movenet_predication(video_path)
     while frame_count is not None:
         logging.info("frame is read, frame_count: %s, timestamp: %d",
                      frame_count, sample_video_reader.get_frame_timestamp())
+        points = movenet.estimate()
         try:
             # contours = motion_detector.motion_detect()
             # frame = motion_detector.marks_contours(sample_video_reader.get_current_frame(), contours)
@@ -167,9 +175,11 @@ if __name__ == '__main__':
             # bgr = motion_detector.optical_flow_nvidia()
             # frame = cv2.add(sample_video_reader.get_current_frame(), bgr)
 
-            frame, bgr = motion_detector.dense_optical_flow_by_gpu()
+            # frame, bgr = motion_detector.dense_optical_flow_by_gpu()
+            # cv2.imshow("feed", cv2.add(frame, bgr))
 
-            cv2.imshow("feed", cv2.add(frame, bgr))
+            points = movenet.estimate()
+            # logging.info(f"points: {points}")
         except Exception as e:
             logging.error(f"An error occurred: {e}")
 
