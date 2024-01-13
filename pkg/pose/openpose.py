@@ -1,4 +1,6 @@
 # from openpose import pose_estimation_by_openpose as op
+import logging
+
 import cv2
 import time
 import numpy as np
@@ -10,10 +12,11 @@ import argparse
 #
 # args = parser.parse_args()
 
-def pose_estimation_by_openpose():
-    MODE = "COCO"
+def pose_estimation_by_openpose(input_source):
+    MODE = "MPI"
+    device = "gpu"
 
-    if MODE is "COCO":
+    if MODE == "COCO":
         protoFile = "./model/coco/pose_deploy_linevec.prototxt"
         weightsFile = "./model/coco/pose_iter_440000.caffemodel"
         nPoints = 18
@@ -21,7 +24,7 @@ def pose_estimation_by_openpose():
                       [11, 12],
                       [12, 13], [0, 14], [0, 15], [14, 16], [15, 17]]
 
-    elif MODE is "MPI":
+    elif MODE == "MPI":
         protoFile = "./model/mpi/pose_deploy_linevec_faster_4_stages.prototxt"
         weightsFile = "./model/mpi/pose_iter_160000.caffemodel"
         nPoints = 15
@@ -33,7 +36,6 @@ def pose_estimation_by_openpose():
     inHeight = 368
     threshold = 0.1
 
-    input_source = args.video_file
     cap = cv2.VideoCapture(input_source)
     hasFrame, frame = cap.read()
 
@@ -41,10 +43,10 @@ def pose_estimation_by_openpose():
                                  (frame.shape[1], frame.shape[0]))
 
     net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
-    if args.device == "cpu":
+    if device == "cpu":
         net.setPreferableBackend(cv2.dnn.DNN_TARGET_CPU)
         print("Using CPU device")
-    elif args.device == "gpu":
+    elif device == "gpu":
         net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
         net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
         print("Using GPU device")
@@ -69,14 +71,20 @@ def pose_estimation_by_openpose():
         W = output.shape[3]
         # Empty list to store the detected keypoints
         points = []
-
+        # logging.info("******************")
+        # logging.info(f"output = {len(output)}")
+        # logging.info(f"output.shape = {len(output.shape)}")
+        # logging.info(f"output.shape[0] = {output.shape[0]}, output.shape[1] = {output.shape[1]}, output.shape[2] = {output.shape[2]} ,output.shape[3] = {output.shape[3]}")
+        # logging.info(f"output[0] = {len(output[0])}, output[0][0] = {output[0][0]}")
+        # logging.info(f"output[0] = {len(output[0])}, output[0][0] = {output[0][0]}")
+        # logging.info("******************")
         for i in range(nPoints):
             # confidence map of corresponding body's part.
             probMap = output[0, i, :, :]
 
             # Find global maxima of the probMap.
             minVal, prob, minLoc, point = cv2.minMaxLoc(probMap)
-
+            logging.info(f"point from minMaxLoc, len(point): {len(point)}, len(probMap): {len(probMap)}")
             # Scale the point to fit on the original image
             x = (frameWidth * point[0]) / W
             y = (frameHeight * point[1]) / H
@@ -91,6 +99,7 @@ def pose_estimation_by_openpose():
             else:
                 points.append(None)
 
+        logging.info(f"len(detected points): {len(points)}")
         # Draw Skeleton
         for pair in POSE_PAIRS:
             partA = pair[0]

@@ -13,6 +13,8 @@ from pkg.video_reader.video_reader import VideoReader
 #     sys.exit(1)
 
 print(cv2.getBuildInformation())
+
+
 class MotionDetection:
     def __init__(self, video_reader: VideoReader) -> None:
         self.video_reader = video_reader

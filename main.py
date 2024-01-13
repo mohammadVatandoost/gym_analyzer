@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 
+from pkg.pose.lib_openpose import OpenPose
 from pkg.pose.movenet_prediction import movenet_predication
 
 np.finfo(np.dtype("float32"))
@@ -14,6 +15,7 @@ from pkg.video_reader.video_reader import VideoReader
 from pkg.motion.motion import MotionDetection
 # from mediapipe import solutions
 # from mediapipe.framework.formats import landmark_pb2
+from pkg.pose.openpose import pose_estimation_by_openpose
 
 
 
@@ -36,7 +38,7 @@ model_path = './model/pose_landmarker_heavy.task'
 # video_path = './dataset/pushups/video_2023-10-08_17-25-11.mp4'
 # video_path = './dataset/squat/video_2023-10-08_17-25-31.mp4'
 # video_path = 'data/dataset/combine/combine_single.mp4'
-video_path = 'data/dataset/group/Open Group Workout Vol. I _ Hiit Training _ Circuit Exercises _ Tabata _ This is Fitness.mp4'
+video_path = 'data/dataset/group/group.mp4'
 output_path = './results/group.mp4'
 
 def read_video_file(file_path):
@@ -146,13 +148,16 @@ if __name__ == '__main__':
     frame_count = sample_video_reader.next_frame()
     time_stamp = sample_video_reader.get_frame_timestamp()
     motion_detector = MotionDetection(sample_video_reader)
-    movenet = Movenet(sample_video_reader)
-    movenet_predication(video_path)
+    # movenet = Movenet(sample_video_reader)
+    # movenet_predication(video_path)
+    # pose_estimation_by_openpose(video_path)
+    open_pose = OpenPose(sample_video_reader)
     while frame_count is not None:
-        logging.info("frame is read, frame_count: %s, timestamp: %d",
-                     frame_count, sample_video_reader.get_frame_timestamp())
-        points = movenet.estimate()
+
+        # points = movenet.estimate()
         try:
+            logging.info("frame is read, frame_count: %s, timestamp: %d",
+                         frame_count, sample_video_reader.get_frame_timestamp())
             # contours = motion_detector.motion_detect()
             # frame = motion_detector.marks_contours(sample_video_reader.get_current_frame(), contours)
 
@@ -178,8 +183,11 @@ if __name__ == '__main__':
             # frame, bgr = motion_detector.dense_optical_flow_by_gpu()
             # cv2.imshow("feed", cv2.add(frame, bgr))
 
-            points = movenet.estimate()
+            # points = movenet.estimate()
             # logging.info(f"points: {points}")
+
+            result = open_pose.estimate()
+            cv2.imshow("feed", result)
         except Exception as e:
             logging.error(f"An error occurred: {e}")
 
