@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
-import time
+import typing
 from scipy.ndimage.filters import gaussian_filter, maximum_filter
 
 from scipy.ndimage.morphology import generate_binary_structure
 from pkg.pose.pafprocess import pafprocess
 
-from lib.utils.common import Human, BodyPart, CocoPart, CocoColors, CocoPairsRender
+from pkg.pose.draw import Human, BodyPart, CocoPart, CocoColors, CocoPairsRender
 
 # Heatmap indices to find each limb (joint connection). Eg: limb_type=1 is
 # Neck->LShoulder, so joint_to_limb_heatmap_relationship[1] represents the

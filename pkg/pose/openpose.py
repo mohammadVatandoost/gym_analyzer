@@ -1,121 +1,73 @@
-# from openpose import pose_estimation_by_openpose as op
 import logging
-
-import cv2
-import time
 import numpy as np
-import argparse
+import torch
+from pkg.pose import im_transform
+from pkg.pose.draw import Human, BodyPart, CocoPart, CocoColors, CocoPairsRender, draw_humans
+from pkg.pose.paf_to_pose import paf_to_pose_cpp
+from pkg.pose.config import _C as cfg
+from pkg.video_reader.video_reader import VideoReader
+from pkg.pose.rtpose_vgg import get_model
+from pkg.pose.preprocessing import (inception_preprocess,
+                                              rtpose_preprocess,
+                                              ssd_preprocess, vgg_preprocess)
 
-# parser = argparse.ArgumentParser(description='Run keypoint detection')
-# parser.add_argument("--device", default="cpu", help="Device to inference on")
-# parser.add_argument("--video_file", default="sample_video.mp4", help="Input Video")
-#
-# args = parser.parse_args()
+class OpenPose():
+    def __init__(self, video_reader: VideoReader) -> None:
+        self.video_reader = video_reader
+        wight_path = "model/pose_model.pth"
+        self.model = get_model('vgg19')
+        self.model.load_state_dict(torch.load(wight_path))
+        self.model = torch.nn.DataParallel(self.model).cuda()
+        self.model.float()
+        self.model.eval()
 
-def pose_estimation_by_openpose(input_source):
-    MODE = "MPI"
-    device = "gpu"
+    def estimate(self):
+        oriImg = self.video_reader.read_frame()
 
-    if MODE == "COCO":
-        protoFile = "./model/coco/pose_deploy_linevec.prototxt"
-        weightsFile = "./model/coco/pose_iter_440000.caffemodel"
-        nPoints = 18
-        POSE_PAIRS = [[1, 0], [1, 2], [1, 5], [2, 3], [3, 4], [5, 6], [6, 7], [1, 8], [8, 9], [9, 10], [1, 11],
-                      [11, 12],
-                      [12, 13], [0, 14], [0, 15], [14, 16], [15, 17]]
+        with torch.no_grad():
+            paf, heatmap, im_scale = self.get_outputs(oriImg, self.model, 'rtpose')
 
-    elif MODE == "MPI":
-        protoFile = "./model/mpi/pose_deploy_linevec_faster_4_stages.prototxt"
-        weightsFile = "./model/mpi/pose_iter_160000.caffemodel"
-        nPoints = 15
-        POSE_PAIRS = [[0, 1], [1, 2], [2, 3], [3, 4], [1, 5], [5, 6], [6, 7], [1, 14], [14, 8], [8, 9], [9, 10],
-                      [14, 11],
-                      [11, 12], [12, 13]]
+        # print(im_scale)
+        humans = paf_to_pose_cpp(heatmap, paf, cfg)
+        #  humans = [BodyPart:0-(0.61, 0.34) score=0.95 BodyPart:1-(0.60, 0.38) score=0.94 BodyPart:2-(0.58, 0.38) score=0.96 BodyPart:3-(0.58, 0.42) score=0.89 BodyPart:4-(0.59, 0.47) score=0.74 BodyPart:5-(0.62, 0.38) score=0.95 BodyPart:6-(0.61, 0.43) score=0.87 BodyPart:7-(0.61, 0.47) score=0.78 BodyPart:8-(0.58, 0.44) score=0.84 BodyPart:9-(0.57, 0.49) score=0.83 BodyPart:10-(0.57, 0.55) score=0.91 BodyPart:11-(0.60, 0.45) score=0.79 BodyPart:12-(0.61, 0.49) score=0.78 BodyPart:13-(0.61, 0.55) score=0.85 BodyPart:14-(0.60, 0.34) score=0.98 BodyPart:15-(0.61, 0.34) score=0.97 BodyPart:16-(0.59, 0.34) score=0.92 BodyPart:17-(0.61, 0.34) score=0.34, BodyPart:0-(0.81, 0.38) score=0.86 BodyPart:1-(0.86, 0.39) score=0.87 BodyPart:2-(0.88, 0.36) score=0.79 BodyPart:5-(0.83, 0.42) score=0.81 BodyPart:6-(0.82, 0.55) score=0.85 BodyPart:7-(0.80, 0.64) score=0.89 BodyPart:8-(0.92, 0.60) score=0.61 BodyPart:9-(0.86, 0.68) score=0.67 BodyPart:10-(0.87, 0.83) score=0.77 BodyPart:11-(0.88, 0.60) score=0.63 BodyPart:12-(0.79, 0.71) score=0.82 BodyPart:13-(0.80, 0.89) score=0.80 BodyPart:15-(0.80, 0.37) score=0.88 BodyPart:17-(0.82, 0.36) score=0.91, BodyPart:0-(0.10, 0.16) score=1.01 BodyPart:1-(0.12, 0.22) score=0.81 BodyPart:2-(0.13, 0.23) score=0.67 BodyPart:5-(0.11, 0.22) score=0.83 BodyPart:6-(0.06, 0.18) score=0.84 BodyPart:7-(0.04, 0.10) score=0.88 BodyPart:8-(0.14, 0.38) score=0.69 BodyPart:9-(0.13, 0.51) score=0.79 BodyPart:10-(0.15, 0.62) score=0.89 BodyPart:11-(0.11, 0.39) score=0.72 BodyPart:12-(0.12, 0.52) score=0.86 BodyPart:13-(0.13, 0.65) score=0.85 BodyPart:15-(0.11, 0.16) score=0.99 BodyPart:17-(0.12, 0.18) score=0.94]
+        logging.info(f"humans = {humans}")
+        out = draw_humans(oriImg, humans)
+        return out
+        # cv2.imwrite('result.png', out)
 
-    inWidth = 368
-    inHeight = 368
-    threshold = 0.1
+    def get_outputs(self, img, model, preprocess):
+        """Computes the averaged heatmap and paf for the given image
+        :param multiplier:
+        :param origImg: numpy array, the image being processed
+        :param model: pytorch model
+        :returns: numpy arrays, the averaged paf and heatmap
+        """
+        inp_size = cfg.DATASET.IMAGE_SIZE
 
-    cap = cv2.VideoCapture(input_source)
-    hasFrame, frame = cap.read()
+        # padding
+        im_croped, im_scale, real_shape = im_transform.crop_with_factor(
+            img, inp_size, factor=cfg.MODEL.DOWNSAMPLE, is_ceil=True)
 
-    vid_writer = cv2.VideoWriter('output.avi', cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 10,
-                                 (frame.shape[1], frame.shape[0]))
+        if preprocess == 'rtpose':
+            im_data = rtpose_preprocess(im_croped)
 
-    net = cv2.dnn.readNetFromCaffe(protoFile, weightsFile)
-    if device == "cpu":
-        net.setPreferableBackend(cv2.dnn.DNN_TARGET_CPU)
-        print("Using CPU device")
-    elif device == "gpu":
-        net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
-        net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
-        print("Using GPU device")
+        elif preprocess == 'vgg':
+            im_data = vgg_preprocess(im_croped)
 
-    while cv2.waitKey(1) < 0:
-        t = time.time()
-        hasFrame, frame = cap.read()
-        frameCopy = np.copy(frame)
-        if not hasFrame:
-            cv2.waitKey()
-            break
+        elif preprocess == 'inception':
+            im_data = inception_preprocess(im_croped)
 
-        frameWidth = frame.shape[1]
-        frameHeight = frame.shape[0]
+        elif preprocess == 'ssd':
+            im_data = ssd_preprocess(im_croped)
 
-        inpBlob = cv2.dnn.blobFromImage(frame, 1.0 / 255, (inWidth, inHeight),
-                                        (0, 0, 0), swapRB=False, crop=False)
-        net.setInput(inpBlob)
-        output = net.forward()
+        batch_images = np.expand_dims(im_data, 0)
 
-        H = output.shape[2]
-        W = output.shape[3]
-        # Empty list to store the detected keypoints
-        points = []
-        # logging.info("******************")
-        # logging.info(f"output = {len(output)}")
-        # logging.info(f"output.shape = {len(output.shape)}")
-        # logging.info(f"output.shape[0] = {output.shape[0]}, output.shape[1] = {output.shape[1]}, output.shape[2] = {output.shape[2]} ,output.shape[3] = {output.shape[3]}")
-        # logging.info(f"output[0] = {len(output[0])}, output[0][0] = {output[0][0]}")
-        # logging.info(f"output[0] = {len(output[0])}, output[0][0] = {output[0][0]}")
-        # logging.info("******************")
-        for i in range(nPoints):
-            # confidence map of corresponding body's part.
-            probMap = output[0, i, :, :]
+        # several scales as a batch
+        batch_var = torch.from_numpy(batch_images).cuda().float()
+        predicted_outputs, _ = model(batch_var)
+        output1, output2 = predicted_outputs[-2], predicted_outputs[-1]
+        heatmap = output2.cpu().data.numpy().transpose(0, 2, 3, 1)[0]
+        paf = output1.cpu().data.numpy().transpose(0, 2, 3, 1)[0]
 
-            # Find global maxima of the probMap.
-            minVal, prob, minLoc, point = cv2.minMaxLoc(probMap)
-            logging.info(f"point from minMaxLoc, len(point): {len(point)}, len(probMap): {len(probMap)}")
-            # Scale the point to fit on the original image
-            x = (frameWidth * point[0]) / W
-            y = (frameHeight * point[1]) / H
+        return paf, heatmap, im_scale
 
-            if prob > threshold:
-                cv2.circle(frameCopy, (int(x), int(y)), 8, (0, 255, 255), thickness=-1, lineType=cv2.FILLED)
-                cv2.putText(frameCopy, "{}".format(i), (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2,
-                            lineType=cv2.LINE_AA)
-
-                # Add the point to the list if the probability is greater than the threshold
-                points.append((int(x), int(y)))
-            else:
-                points.append(None)
-
-        logging.info(f"len(detected points): {len(points)}")
-        # Draw Skeleton
-        for pair in POSE_PAIRS:
-            partA = pair[0]
-            partB = pair[1]
-
-            if points[partA] and points[partB]:
-                cv2.line(frame, points[partA], points[partB], (0, 255, 255), 3, lineType=cv2.LINE_AA)
-                cv2.circle(frame, points[partA], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
-                cv2.circle(frame, points[partB], 8, (0, 0, 255), thickness=-1, lineType=cv2.FILLED)
-
-        cv2.putText(frame, "time taken = {:.2f} sec".format(time.time() - t), (50, 50), cv2.FONT_HERSHEY_COMPLEX, .8,
-                    (255, 50, 0), 2, lineType=cv2.LINE_AA)
-        # cv2.putText(frame, "OpenPose using OpenCV", (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 50, 0), 2, lineType=cv2.LINE_AA)
-        # cv2.imshow('Output-Keypoints', frameCopy)
-        cv2.imshow('Output-Skeleton', frame)
-
-        vid_writer.write(frame)
-
-    vid_writer.release()
