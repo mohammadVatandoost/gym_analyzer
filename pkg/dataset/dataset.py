@@ -1,7 +1,10 @@
 import logging
 import os
 import string
+from random import shuffle
+from sklearn.model_selection import train_test_split
 
+import cv2
 import numpy as np
 import keras
 
@@ -12,7 +15,6 @@ class ExerciseVideoData:
     def __init__(self, exercise_type, files_name) -> None:
         self.exercise_type = exercise_type
         self.files_name = files_name
-
 
 
 def read_datasets(directory):
@@ -36,5 +38,10 @@ def read_datasets(directory):
     label_processor = keras.layers.StringLookup(
         num_oov_indices=0, vocabulary=np.unique(labels)
     )
+    shuffle(videos)
     logging.info(f"labels = {label_processor.get_vocabulary()}")
-    return videos, label_processor
+    data = np.array(videos)
+    x_train ,x_test = train_test_split(data,test_size=0.75)
+    logging.info(f"quantity of train data: {len(x_train)}, quantity of test data: {len(x_test)}")
+    return x_train, x_test, label_processor
+
