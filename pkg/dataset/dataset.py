@@ -12,9 +12,9 @@ from pkg.dataset.utils import directory_list, mp4_files_list
 
 
 class ExerciseVideoData:
-    def __init__(self, exercise_type, files_name) -> None:
+    def __init__(self, exercise_type, file_name) -> None:
         self.exercise_type = exercise_type
-        self.files_name = files_name
+        self.file_name = file_name
 
 
 def read_datasets(directory):
