@@ -41,7 +41,7 @@ def read_datasets(directory):
     shuffle(videos)
     logging.info(f"labels = {label_processor.get_vocabulary()}")
     data = np.array(videos)
-    x_train ,x_test = train_test_split(data,test_size=0.75)
+    x_train ,x_test = train_test_split(data, test_size=0.25)
     logging.info(f"quantity of train data: {len(x_train)}, quantity of test data: {len(x_test)}")
     return x_train, x_test, label_processor
 

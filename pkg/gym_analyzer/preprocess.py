@@ -99,6 +99,6 @@ def prepare_all_videos(feature_extractor, exercise_videos: list[ExerciseVideoDat
 
         frame_features[idx,] = temp_frame_features.squeeze()
         frame_masks[idx,] = temp_frame_mask.squeeze()
-
-    labels = keras.ops.convert_to_numpy(label_processor(labels[..., None]))
-    return (frame_features, frame_masks), labels
+    labels = label_processor(labels)
+    # labels = keras.ops.convert_to_numpy(labels)
+    return (frame_features, frame_masks), labels.numpy()
