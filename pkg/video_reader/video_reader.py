@@ -10,6 +10,8 @@ class VideoReader:
 
     def read_frame(self):
         """ Read a frame """
+        if self._current_frame_counter >= self._total_frames:
+            return None
         if self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret is False or frame is None:
