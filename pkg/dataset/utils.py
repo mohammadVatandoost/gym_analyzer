@@ -11,3 +11,6 @@ def directory_list(directory: string):
 
 def mp4_files_list(directory: string):
     return glob.glob(directory+"/*.mp4")
+
+def npy_files_list(directory: string):
+    return glob.glob(directory+"/*.npy")

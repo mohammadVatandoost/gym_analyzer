@@ -10,7 +10,7 @@ from pkg.video_reader.video_reader import VideoReader
 
 class MediaPipePose():
 
-    def __init__(self, video_reader: VideoReader) -> None:
+    def __init__(self, video_reader: VideoReader = None) -> None:
         self.video_reader = video_reader
         # Initializing mediapipe pose class.
         self.mp_pose = mp.solutions.pose
@@ -18,7 +18,7 @@ class MediaPipePose():
         # static_image_mode: if set to False, the detector is only invoked as needed, that is in the very first frame or when the tracker loses track. If set to True, the person detector is invoked on every input image.
         # smooth_landmarks – It is a boolean value that is if set to True, pose landmarks across different frames are filtered to reduce noise. But only works when static_image_mode is also set to False. Its default value is True.
         self.pose = self.mp_pose.Pose(
-            static_image_mode=False,
+            static_image_mode=True,
             min_detection_confidence=0.3,
             min_tracking_confidence=0.5,
             model_complexity=2,
@@ -26,6 +26,10 @@ class MediaPipePose():
         )
         # Initializing mediapipe drawing class, useful for annotation.
         self.mp_drawing = mp.solutions.drawing_utils
+
+    def estimate_frame(self, frame):
+        # Perform pose detection after converting the image into RGB format.
+        return self.pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
     def estimate(self):
         frame = self.video_reader.read_frame()

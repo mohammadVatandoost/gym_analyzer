@@ -4,6 +4,8 @@ import numpy as np
 import keras
 
 from pkg.dataset.dataset import ExerciseVideoData
+from pkg.gym_analyzer.keypoint import KeypointExtractor
+from sklearn.model_selection import train_test_split
 
 IMG_SIZE = 224
 MAX_SEQ_LENGTH = 20
@@ -102,3 +104,11 @@ def prepare_all_videos(feature_extractor, exercise_videos: list[ExerciseVideoDat
     labels = label_processor(labels)
     # labels = keras.ops.convert_to_numpy(labels)
     return (frame_features, frame_masks), labels.numpy()
+
+def preprocess_on_key_points(feature_extractor, exercise_videos: list[ExerciseVideoData], label_processor, data_path, sequence_length):
+    key_point_extractor = KeypointExtractor(exercise_videos,  feature_extractor,  sequence_length, label_processor, data_path)
+    sequences, labels, key_point_path = key_point_extractor.extract
+    X = np.array(sequences)
+    Y = np.array(labels)
+    return X, Y
+

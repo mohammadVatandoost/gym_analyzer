@@ -2,7 +2,8 @@ import logging
 import numpy as np
 
 from pkg.dataset.dataset import read_datasets
-from pkg.gym_analyzer.train import train_rnn_keras
+from pkg.gym_analyzer.train_lstm_dnn import train_lstm_dnn
+from pkg.gym_analyzer.train_rnn import train_rnn_keras
 from pkg.pose.openpose import OpenPose
 
 np.finfo(np.dtype("float32"))
@@ -53,7 +54,8 @@ output_path = './results/group.mp4'
 if __name__ == '__main__':
     logging.info("log started")
     x_train, x_test, label_processor = read_datasets("../../dataset/dataset_1/archive")
-    train_rnn_keras(x_train, x_test, label_processor)
+    train_lstm_dnn(x_train, x_test, label_processor)
+    # train_rnn_keras(x_train, x_test, label_processor)
     # test_algorithms()
 
 
