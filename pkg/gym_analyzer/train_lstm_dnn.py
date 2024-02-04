@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from keras.utils import to_categorical
@@ -32,8 +33,12 @@ def train_lstm_dnn(x_train: list[ExerciseVideoData], x_test: list[ExerciseVideoD
     data_path = os.path.join(os.getcwd(), 'keypoints')
     train_data, train_labels = preprocess_on_key_points(pose, x_train, label_processor, data_path, Sequence_Length)
     test_data, test_labels = preprocess_on_key_points(pose, x_test, label_processor, data_path, Sequence_Length)
+    logging.info(f"Training data shape: {train_data.shape} and size: {len(train_data)}, Training labels data shape: {train_labels.shape} and size: {len(train_labels)}")
+    logging.info(f"Testing data shape: {test_data.shape} and size: {len(test_data)}, Testing labels data shape: {test_labels.shape} and size: {len(test_labels)}")
     # Callbacks to be used during neural network training
+    # Stop training when a monitored metric has stopped improving.
     es_callback = EarlyStopping(monitor='val_loss', min_delta=5e-4, patience=10, verbose=0, mode='min')
+    # Reduce learning rate when a metric has stopped improving.
     lr_callback = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=5, min_lr=0.00001, verbose=0, mode='min')
     chkpt_callback = ModelCheckpoint(filepath=data_path, monitor='val_loss', verbose=0, save_best_only=True,
                                      save_weights_only=False, mode='min', save_freq=1)
@@ -62,6 +67,11 @@ def train_lstm_dnn(x_train: list[ExerciseVideoData], x_test: list[ExerciseVideoD
 def build_lstm(label_processor):
     lstm = Sequential()
     lstm.add(LSTM(128, return_sequences=True, activation='relu', input_shape=(Sequence_Length, Num_Input_Values)))
+    lstm.add(LSTM(256, return_sequences=True, activation='relu'))
+    lstm.add(LSTM(256, return_sequences=True, activation='relu'))
+    lstm.add(LSTM(256, return_sequences=True, activation='relu'))
+    lstm.add(LSTM(256, return_sequences=True, activation='relu'))
+    lstm.add(LSTM(256, return_sequences=True, activation='relu'))
     lstm.add(LSTM(256, return_sequences=True, activation='relu'))
     lstm.add(LSTM(128, return_sequences=False, activation='relu'))
     lstm.add(Dense(128, activation='relu'))

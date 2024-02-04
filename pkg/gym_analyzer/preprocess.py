@@ -6,6 +6,7 @@ import keras
 from pkg.dataset.dataset import ExerciseVideoData
 from pkg.gym_analyzer.keypoint import KeypointExtractor
 from sklearn.model_selection import train_test_split
+from keras.utils import to_categorical
 
 IMG_SIZE = 224
 MAX_SEQ_LENGTH = 20
@@ -109,6 +110,7 @@ def preprocess_on_key_points(feature_extractor, exercise_videos: list[ExerciseVi
     key_point_extractor = KeypointExtractor(exercise_videos,  feature_extractor,  sequence_length, label_processor, data_path)
     sequences, labels, key_point_path = key_point_extractor.extract
     X = np.array(sequences)
-    Y = np.array(labels)
+    # Y = np.array(labels)
+    Y = to_categorical(labels).astype(int)
     return X, Y
 

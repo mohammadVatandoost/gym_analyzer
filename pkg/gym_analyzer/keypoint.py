@@ -4,6 +4,7 @@ import os
 import numpy as np
 
 from pkg.dataset.dataset import ExerciseVideoData
+from pkg.dataset.utils import npy_files_list
 from pkg.pose.mediapipe_pose import MediaPipePose
 from pkg.video_reader.video_reader import VideoReader
 
@@ -31,7 +32,8 @@ class KeypointExtractor:
         sequences, labels = [], []
         for idx, exercise_video in enumerate(self.exercise_videos):
             window = []
-            if not os.path.exists(os.path.join(self.data_path, exercise_video.exercise_type, str(os.path.basename(exercise_video.file_name)))):
+            path = os.path.join(self.data_path, exercise_video.exercise_type, str(os.path.basename(exercise_video.file_name)))
+            if not os.path.exists(path):
                 logging.info(f"Creating {os.path.join(self.data_path, exercise_video.exercise_type, str(os.path.basename(exercise_video.file_name)))} directory for storing keypoints")
                 os.makedirs(
                     os.path.join(
@@ -41,6 +43,10 @@ class KeypointExtractor:
                     )
                 )
             else:
+                logging.info(f"Loading data from {path}")
+                sequences_from_storage, labels_from_storage = self.__load_winodws(path,self.label_processor(exercise_video.exercise_type))
+                sequences.extend(sequences_from_storage)
+                labels.extend(labels_from_storage)
                 continue
             sample_video_reader = VideoReader(exercise_video.file_name)
             frame_count = sample_video_reader.next_frame()
@@ -65,3 +71,11 @@ class KeypointExtractor:
 
 
     def __load_winodws(self, path, label):
+        files = npy_files_list(path)
+        sequences = []
+        labels = []
+        for f in files:
+            window = np.load(f)
+            sequences.append(window)
+            labels.append(label)
+        return sequences, labels
