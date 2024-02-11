@@ -42,8 +42,8 @@ model_path = './model/pose_landmarker_heavy.task'
 video_path = '../../dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4'
 output_path = './results/group.mp4'
 visualize_files = [
-    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4',
-    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_43.mp4'
+    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_43.mp4',
+    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4'
 ]
 # def read_video_file(file_path):
 #     cap = cv2.VideoCapture(file_path)
