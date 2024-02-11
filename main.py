@@ -4,6 +4,7 @@ import numpy as np
 from pkg.dataset.dataset import read_datasets
 from pkg.gym_analyzer.train_lstm_dnn import train_lstm_dnn
 from pkg.gym_analyzer.train_rnn import train_rnn_keras
+from pkg.gym_analyzer.visualize import visualize_data
 from pkg.pose.openpose import OpenPose
 
 np.finfo(np.dtype("float32"))
@@ -40,7 +41,10 @@ model_path = './model/pose_landmarker_heavy.task'
 # video_path = 'data/dataset/group/group.mp4'
 video_path = '../../dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4'
 output_path = './results/group.mp4'
-
+visualize_files = [
+    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4',
+    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_43.mp4'
+]
 # def read_video_file(file_path):
 #     cap = cv2.VideoCapture(file_path)
 #     if not cap.isOpened():
@@ -53,8 +57,11 @@ output_path = './results/group.mp4'
 
 if __name__ == '__main__':
     logging.info("log started")
-    x_train, x_test, label_processor = read_datasets("../../dataset/dataset_1/archive")
-    train_lstm_dnn(x_train, x_test, label_processor)
+    visualize_data(visualize_files)
+
+    # x_train, x_test, label_processor = read_datasets("../../dataset/dataset_1/archive")
+    # train_lstm_dnn(x_train, x_test, label_processor)
+
     # train_rnn_keras(x_train, x_test, label_processor)
     # test_algorithms()
 

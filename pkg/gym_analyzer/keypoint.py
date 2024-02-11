@@ -1,6 +1,8 @@
 import logging
 import os
+import time
 
+import cv2
 import numpy as np
 
 from pkg.dataset.dataset import ExerciseVideoData
@@ -8,6 +10,7 @@ from pkg.dataset.utils import npy_files_list
 from pkg.pose.mediapipe_pose import MediaPipePose
 from pkg.video_reader.video_reader import VideoReader
 
+show_frames = True
 
 class KeypointExtractor:
     def __init__(self, exercise_videos: list[ExerciseVideoData], model, sequence_length, label_processor, data_path):
@@ -30,9 +33,14 @@ class KeypointExtractor:
     @property
     def extract(self):
         sequences, labels = [], []
+        if show_frames:
+            cv2.startWindowThread()
+            cv2.namedWindow("preview")
+
         for idx, exercise_video in enumerate(self.exercise_videos):
             window = []
             path = os.path.join(self.data_path, exercise_video.exercise_type, str(os.path.basename(exercise_video.file_name)))
+            # make directory if it does not exist yet. If it exist, read them from file and go to next
             if not os.path.exists(path):
                 logging.info(f"Creating {os.path.join(self.data_path, exercise_video.exercise_type, str(os.path.basename(exercise_video.file_name)))} directory for storing keypoints")
                 os.makedirs(
@@ -48,11 +56,19 @@ class KeypointExtractor:
                 sequences.extend(sequences_from_storage)
                 labels.extend(labels_from_storage)
                 continue
+            # extract keypoint from mp4 file and store them in chunks with size of sequence_length
             sample_video_reader = VideoReader(exercise_video.file_name)
+            self.model.reset()
+            logging.info(f"video fps: {sample_video_reader.get_video_fps()}")
             frame_count = sample_video_reader.next_frame()
             while frame_count is not None:
-                results = self.model.estimate_frame(sample_video_reader.get_current_frame())
+                frame = sample_video_reader.get_current_frame()
+                results = self.model.estimate_frame(frame, int(sample_video_reader.get_frame_timestamp()))
                 key_points = self.model.extract_keypoints(results)
+                if show_frames:
+                    annotated_frame = self.model.draw_landmarks(frame, results)
+                    cv2.imshow('preview', annotated_frame)
+                    logging.info(f"key_points: {key_points}")
                 window.append(key_points)
                 if len(window) == self.sequence_length:
                     sequences.append(window)
@@ -66,6 +82,9 @@ class KeypointExtractor:
                     np.save(npy_path, window)
                     window = []
                 frame_count = sample_video_reader.next_frame()
+
+        if show_frames:
+            cv2.destroyAllWindows()
 
         return sequences, labels, self.data_path
 
