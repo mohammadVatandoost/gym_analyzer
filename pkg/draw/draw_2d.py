@@ -13,7 +13,7 @@ class Draw2d():
         self.ax.set_ylabel('Y')
         self.ax.set_title(title)
 
-        # Define the skeleton structure based on the provided keypoints
+        # Define the important skeleton structure based on the provided keypoints
         self.skeleton = [
             (0, 1), (1, 2), (2, 3),  # Left eye
             (0, 4), (4, 5), (5, 6),  # Right eye
@@ -27,7 +27,6 @@ class Draw2d():
             (11, 12),  # Shoulder connection
             (23, 24)  # Hip connection
         ]
-
 
     def plot_keypoints(self, pose_keypoints):
         x, y, labels = [], [], []

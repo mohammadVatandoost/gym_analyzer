@@ -12,7 +12,8 @@ from pkg.video_reader.video_reader import VideoReader
 
 show_frames = True
 
-class KeypointExtractor:
+
+class FeatureExtractor:
     def __init__(self, exercise_videos: list[ExerciseVideoData], model, sequence_length, label_processor, data_path):
         self.exercise_videos = exercise_videos
         self.model = model
@@ -30,7 +31,6 @@ class KeypointExtractor:
                 logging.info(f"Creating {os.path.join(self.data_path, exercise_type)} directory for storing keypoints")
                 os.makedirs(os.path.join(self.data_path, exercise_type))
 
-    @property
     def extract(self):
         sequences, labels = [], []
         if show_frames:
@@ -39,10 +39,12 @@ class KeypointExtractor:
 
         for idx, exercise_video in enumerate(self.exercise_videos):
             window = []
-            path = os.path.join(self.data_path, exercise_video.exercise_type, str(os.path.basename(exercise_video.file_name)))
+            path = os.path.join(self.data_path, exercise_video.exercise_type,
+                                str(os.path.basename(exercise_video.file_name)))
             # make directory if it does not exist yet. If it exist, read them from file and go to next
             if not os.path.exists(path):
-                logging.info(f"Creating {os.path.join(self.data_path, exercise_video.exercise_type, str(os.path.basename(exercise_video.file_name)))} directory for storing keypoints")
+                logging.info(
+                    f"Creating {os.path.join(self.data_path, exercise_video.exercise_type, str(os.path.basename(exercise_video.file_name)))} directory for storing keypoints")
                 os.makedirs(
                     os.path.join(
                         self.data_path,
@@ -52,7 +54,8 @@ class KeypointExtractor:
                 )
             else:
                 logging.info(f"Loading data from {path}")
-                sequences_from_storage, labels_from_storage = self.__load_winodws(path,self.label_processor(exercise_video.exercise_type))
+                sequences_from_storage, labels_from_storage = self.__load_winodws(path, self.label_processor(
+                    exercise_video.exercise_type))
                 sequences.extend(sequences_from_storage)
                 labels.extend(labels_from_storage)
                 continue
@@ -69,7 +72,9 @@ class KeypointExtractor:
                     annotated_frame = self.model.draw_landmarks(frame, results)
                     cv2.imshow('preview', annotated_frame)
                     logging.info(f"key_points: {key_points}")
-                window.append(key_points)
+                # window.append(key_points)
+                angles = self.model.calculate_keypoint_angle(key_points)
+                window.append(angles)
                 if len(window) == self.sequence_length:
                     sequences.append(window)
                     labels.append(self.label_processor(exercise_video.exercise_type))
@@ -87,7 +92,6 @@ class KeypointExtractor:
             cv2.destroyAllWindows()
 
         return sequences, labels, self.data_path
-
 
     def __load_winodws(self, path, label):
         files = npy_files_list(path)

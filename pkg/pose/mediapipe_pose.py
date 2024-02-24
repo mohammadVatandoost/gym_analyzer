@@ -124,6 +124,17 @@ class MediaPipePose():
         plt.close()
         return pose_keypoints
 
+    def calculate_keypoint_angle(self, pose_keypoints):
+        angels = []
+        for connection in self.skeleton:
+            angels = self.calculateAngle(
+                pose_keypoints[connection[0]],
+                pose_keypoints[connection[0]],
+                pose_keypoints[connection[0]]
+            )
+        return angels
+
+
     def calculateAngle(self, landmark1, landmark2, landmark3):
         '''
         This function calculates angle between three different landmarks.
