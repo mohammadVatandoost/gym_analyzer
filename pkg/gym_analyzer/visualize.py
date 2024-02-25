@@ -27,9 +27,10 @@ def draw_keypoints_2d(files, model):
         while frame_count is not None:
             frame = sample_video_reader.get_current_frame()
             poseLandmarkerResult = model.estimate_frame(frame, int(sample_video_reader.get_frame_timestamp()))
-            key_points = model.extract_keypoints(poseLandmarkerResult)
-
-            logging.info(f"key_points: {key_points}")
+            # key_points = model.extract_keypoints(poseLandmarkerResult)
+            angles = model.calculate_keypoint_angle(poseLandmarkerResult.pose_landmarks[0])
+            # logging.info(f"key_points: {key_points}")
+            logging.info(f"angles: {angles}")
             draw2D.clear_plot()
             draw2D.plot_keypoints(poseLandmarkerResult.pose_landmarks[0])
 

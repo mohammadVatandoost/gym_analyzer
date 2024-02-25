@@ -3,9 +3,12 @@ import cv2
 import numpy as np
 from time import time
 import mediapipe as mp
+# import mediapipe
 from mediapipe.framework.formats import landmark_pb2
 from mediapipe import solutions
+from mediapipe.tasks.python.vision import PoseLandmarkerResult
 
+from pkg.pose.skeleton import angle_connection
 from pkg.video_reader.video_reader import VideoReader
 
 import matplotlib.pyplot as plt
@@ -42,7 +45,7 @@ class MediaPipePose():
         #     smooth_landmarks=True
         # )
 
-    def estimate_frame(self, frame, frame_timestamp_ms):
+    def estimate_frame(self, frame, frame_timestamp_ms) -> PoseLandmarkerResult:
         # Perform pose detection after converting the image into RGB format.
         # Convert the frame received from OpenCV to a MediaPipe’s Image object.
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
@@ -84,7 +87,7 @@ class MediaPipePose():
                 solutions.drawing_styles.get_default_pose_landmarks_style())
         return annotated_image
 
-    def extract_keypoints(self, PoseLandmarkerResult):
+    def flatten_key_points(self, result: PoseLandmarkerResult) -> np.array:
         '''
         This function extracts the pose landmarks from the results object.
             Args:
@@ -92,7 +95,7 @@ class MediaPipePose():
             Returns:
                 pose_keypoints: A list of pose landmarks.
         '''
-        pose = np.array([[res.x, res.y, res.z, res.visibility] for res in PoseLandmarkerResult.pose_landmarks[0]]).flatten() if PoseLandmarkerResult.pose_landmarks else np.zeros(33*4)
+        pose = np.array([[res.x, res.y, res.z, res.visibility] for res in result.pose_landmarks[0]]).flatten() if result.pose_landmarks else np.zeros(33*4)
         # self.plot_keypoints(PoseLandmarkerResult.pose_landmarks[0])
         return pose
 
@@ -124,18 +127,24 @@ class MediaPipePose():
         plt.close()
         return pose_keypoints
 
-    def calculate_keypoint_angle(self, pose_keypoints):
+    def calculate_keypoint_angle(self, pose_key_points: list[landmark_pb2.NormalizedLandmark]):
         angels = []
-        for connection in self.skeleton:
-            angels = self.calculateAngle(
-                pose_keypoints[connection[0]],
-                pose_keypoints[connection[0]],
-                pose_keypoints[connection[0]]
+        for connection in angle_connection:
+            angel = self.calculateAngle(
+                pose_key_points[connection[0]],
+                pose_key_points[connection[1]],
+                pose_key_points[connection[2]]
             )
+            angels.append(angel)
+
         return angels
 
-
-    def calculateAngle(self, landmark1, landmark2, landmark3):
+    @staticmethod
+    def calculateAngle(
+            landmark1: landmark_pb2.NormalizedLandmark,
+            landmark2: landmark_pb2.NormalizedLandmark,
+            landmark3: landmark_pb2.NormalizedLandmark
+    ):
         '''
         This function calculates angle between three different landmarks.
             Args:
@@ -145,12 +154,11 @@ class MediaPipePose():
             Returns:
                 angle: The calculated angle between the three landmarks.
         '''
-        # Get the required landmarks coordinates.
-        x1, y1, _ = landmark1
-        x2, y2, _ = landmark2
-        x3, y3, _ = landmark3
         # Calculate the angle between the three points
-        angle = math.degrees(math.atan2(y3 - y2, x3 - x2) - math.atan2(y1 - y2, x1 - x2))
+        angle = math.degrees(
+            math.atan2(landmark3.y - landmark2.y, landmark3.x - landmark2.x) -
+            math.atan2(landmark1.y - landmark2.y, landmark1.x - landmark2.x)
+        )
         # Check if the angle is less than zero.
         if angle < 0:
             # Add 360 to the found angle.
