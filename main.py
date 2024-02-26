@@ -57,10 +57,10 @@ visualize_files = [
 
 if __name__ == '__main__':
     logging.info("log started")
-    visualize_data(visualize_files)
+    # visualize_data(visualize_files)
 
-    # x_train, x_test, label_processor = read_datasets("../../dataset/dataset_1/archive")
-    # train_lstm_dnn(x_train, x_test, label_processor)
+    x_train, x_test, label_processor = read_datasets("../../dataset/dataset_1/archive")
+    train_lstm_dnn(x_train, x_test, label_processor)
 
     # train_rnn_keras(x_train, x_test, label_processor)
     # test_algorithms()

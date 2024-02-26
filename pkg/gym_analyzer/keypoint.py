@@ -10,7 +10,7 @@ from pkg.dataset.utils import npy_files_list
 from pkg.pose.mediapipe_pose import MediaPipePose
 from pkg.video_reader.video_reader import VideoReader
 
-show_frames = True
+show_frames = False
 
 
 class FeatureExtractor:
@@ -33,6 +33,7 @@ class FeatureExtractor:
 
     def extract(self):
         sequences, labels = [], []
+        error_counter = 0
         if show_frames:
             cv2.startWindowThread()
             cv2.namedWindow("preview")
@@ -64,16 +65,34 @@ class FeatureExtractor:
             self.model.reset()
             logging.info(f"video fps: {sample_video_reader.get_video_fps()}")
             frame_count = sample_video_reader.next_frame()
+            last_frame_timestamp = -1.0
+            frame_counter = 0
             while frame_count is not None:
                 frame = sample_video_reader.get_current_frame()
-                results = self.model.estimate_frame(frame, int(sample_video_reader.get_frame_timestamp()))
-                key_points = self.model.extract_keypoints(results)
+                frame_counter = frame_counter + 1
+                frame_timestamp = sample_video_reader.get_frame_timestamp()
+                if last_frame_timestamp >= frame_timestamp:
+                    logging.error(f"timestamp must be monotonically increasing, "
+                                  f"last_frame_timestamp: {last_frame_timestamp}, "
+                                  f"frame_timestamp: {frame_timestamp},"
+                                  f"frame_count: {frame_count}")
+                    frame_count = sample_video_reader.next_frame()
+                    continue
+                results = self.model.estimate_frame(frame, int(frame_timestamp))
+                last_frame_timestamp = frame_timestamp
+                if len(results.pose_landmarks) == 0:
+                    logging.error(f"no landmark detected, "
+                                  f"frame_count: {frame_count},frame_timestamp: {frame_timestamp}")
+                    frame_count = sample_video_reader.next_frame()
+                    error_counter = error_counter + 1
+                    continue
+                # key_points = self.model.extract_keypoints(results)
                 if show_frames:
                     annotated_frame = self.model.draw_landmarks(frame, results)
                     cv2.imshow('preview', annotated_frame)
-                    logging.info(f"key_points: {key_points}")
+                    # logging.info(f"key_points: {key_points}")
                 # window.append(key_points)
-                angles = self.model.calculate_keypoint_angle(key_points)
+                angles = self.model.calculate_keypoint_angle(results.pose_landmarks[0])
                 window.append(angles)
                 if len(window) == self.sequence_length:
                     sequences.append(window)
@@ -87,10 +106,12 @@ class FeatureExtractor:
                     np.save(npy_path, window)
                     window = []
                 frame_count = sample_video_reader.next_frame()
+            logging.info(f"frame_counter: {frame_counter}")
 
         if show_frames:
             cv2.destroyAllWindows()
 
+        logging.info(f"error_counter: {error_counter}")
         return sequences, labels, self.data_path
 
     def __load_winodws(self, path, label):
