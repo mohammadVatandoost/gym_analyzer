@@ -42,7 +42,7 @@ model_path = './model/pose_landmarker_heavy.task'
 video_path = '../../dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4'
 output_path = './results/group.mp4'
 visualize_files = [
-    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_43.mp4',
+    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_45.mp4',
     '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4'
 ]
 # def read_video_file(file_path):
@@ -57,10 +57,10 @@ visualize_files = [
 
 if __name__ == '__main__':
     logging.info("log started")
-    # visualize_data(visualize_files)
+    visualize_data(visualize_files)
 
-    x_train, x_test, label_processor = read_datasets("../../dataset/dataset_1/archive")
-    train_lstm_dnn(x_train, x_test, label_processor)
+    # x_train, x_test, label_processor = read_datasets("../../dataset/dataset_1/archive")
+    # train_lstm_dnn(x_train, x_test, label_processor)
 
     # train_rnn_keras(x_train, x_test, label_processor)
     # test_algorithms()

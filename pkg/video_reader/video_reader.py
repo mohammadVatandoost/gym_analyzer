@@ -4,6 +4,7 @@ class VideoReader:
     """ Helper class for video utilities """
     def __init__(self, filename):
         self.cap = cv2.VideoCapture(filename)
+        self.cap.set(cv2.CAP_PROP_FPS, 2)
         self._total_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
         self._current_frame_counter = 0
         self._current_frame: cv2.typing.MatLike

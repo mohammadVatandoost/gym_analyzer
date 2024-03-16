@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 model_path = "/home/mohammad/work/GYM/code/gym_analyzer/model/pose_landmarker_heavy.task"
 
+
 class MediaPipePose():
 
     def __init__(self, video_reader: VideoReader = None) -> None:
@@ -28,22 +29,22 @@ class MediaPipePose():
         # Create a pose landmarker instance with the video mode:
         self.options = poseLandmarkerOptions(
             base_options=BaseOptions(model_asset_path=model_path),
-            running_mode=VisionRunningMode.VIDEO
+            running_mode=VisionRunningMode.VIDEO,
         )
-        self.pose = PoseLandmarker.create_from_options(self.options)
+        # self.pose = PoseLandmarker.create_from_options(self.options)
         self.mp_pose = mp.solutions.pose
         self.mp_drawing = mp.solutions.drawing_utils
         # Setting up the Pose function.
         # static_image_mode: if set to False, the detector is only invoked as needed, that is in the very first frame or when the tracker loses track. If set to True, the person detector is invoked on every input image.
         # smooth_landmarks – It is a boolean value that is if set to True, pose landmarks across different frames are filtered to reduce noise. But only works when static_image_mode is also set to False. Its default value is True.
-        # self.pose = self.mp_pose.Pose(
-        #     static_image_mode=True,
-        #     # running_mode=VIDEO,
-        #     min_detection_confidence=0.3,
-        #     min_tracking_confidence=0.5,
-        #     model_complexity=2,
-        #     smooth_landmarks=True
-        # )
+        self.pose = self.mp_pose.Pose(
+            static_image_mode=True,
+            # running_mode=VIDEO,
+            min_detection_confidence=0.3,
+            min_tracking_confidence=0.5,
+            model_complexity=2,
+            smooth_landmarks=True
+        )
 
     def estimate_frame(self, frame, frame_timestamp_ms) -> PoseLandmarkerResult:
         # Perform pose detection after converting the image into RGB format.
@@ -51,6 +52,9 @@ class MediaPipePose():
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
         return self.pose.detect_for_video(mp_image, frame_timestamp_ms)
         # return self.pose.process(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+
+    def estimate_image(self, image):
+        return self.pose.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
 
     def estimate(self):
         frame = self.video_reader.read_frame()

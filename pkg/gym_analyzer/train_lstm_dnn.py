@@ -16,11 +16,13 @@ from keras.layers import (LSTM, Dense, Concatenate, Attention, Dropout, Softmax,
 from pkg.dataset.dataset import ExerciseVideoData
 from pkg.gym_analyzer.preprocess import preprocess_on_key_points
 from pkg.pose.mediapipe_pose import MediaPipePose
+from pkg.pose.skeleton import angle_connection
 
 # some hyperparamters
 Batch_Size = 32
 Max_Epochs = 500
-Num_Input_Values = 33*4  # 33 landmarks with 4 values (x, y, z, visibility)
+# Num_Input_Values = 33*4  # 33 landmarks with 4 values (x, y, z, visibility)
+Num_Input_Values = len(angle_connection)  # number of angle connection
 FPS = 30
 Sequence_Length = FPS * 1
 Learning_Rate = 0.01

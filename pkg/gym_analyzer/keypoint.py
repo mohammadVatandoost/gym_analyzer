@@ -11,6 +11,7 @@ from pkg.pose.mediapipe_pose import MediaPipePose
 from pkg.video_reader.video_reader import VideoReader
 
 show_frames = False
+show_error_frames = False
 
 
 class FeatureExtractor:
@@ -34,7 +35,7 @@ class FeatureExtractor:
     def extract(self):
         sequences, labels = [], []
         error_counter = 0
-        if show_frames:
+        if show_frames or show_error_frames:
             cv2.startWindowThread()
             cv2.namedWindow("preview")
 
@@ -85,6 +86,9 @@ class FeatureExtractor:
                                   f"frame_count: {frame_count},frame_timestamp: {frame_timestamp}")
                     frame_count = sample_video_reader.next_frame()
                     error_counter = error_counter + 1
+                    if show_error_frames:
+                        cv2.imshow('preview', frame)
+                        cv2.waitKey(1)
                     continue
                 # key_points = self.model.extract_keypoints(results)
                 if show_frames:
