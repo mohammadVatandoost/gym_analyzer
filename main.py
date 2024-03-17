@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 
+from pkg.config.sample_data import visualize_files
 from pkg.dataset.dataset import read_datasets
 from pkg.gym_analyzer.train_lstm_dnn import train_lstm_dnn
 from pkg.gym_analyzer.train_rnn import train_rnn_keras
@@ -41,10 +42,7 @@ model_path = './model/pose_landmarker_heavy.task'
 # video_path = 'data/dataset/group/group.mp4'
 video_path = '../../dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4'
 output_path = './results/group.mp4'
-visualize_files = [
-    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_45.mp4',
-    '/home/mohammad/work/GYM/dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4'
-]
+
 # def read_video_file(file_path):
 #     cap = cv2.VideoCapture(file_path)
 #     if not cap.isOpened():
@@ -64,7 +62,6 @@ if __name__ == '__main__':
 
     # train_rnn_keras(x_train, x_test, label_processor)
     # test_algorithms()
-
 
 
 def test_algorithms():

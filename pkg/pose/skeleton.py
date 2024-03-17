@@ -13,3 +13,11 @@ angle_connection = [
     (26, 28, 32),  # Left Leg and foot
     (25, 27, 31),  # Right Leg and foot
 ]
+
+angle_connection_labels = [
+    "Left arm", "Right arm",
+    "Left shoulder", "Right shoulder",
+    "Left Leg", "Right Leg",
+    "Left Leg and foot", "Right Leg and foot"
+]
+
