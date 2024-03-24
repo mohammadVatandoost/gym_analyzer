@@ -82,7 +82,16 @@ def dense_motion(video, device):
 
                 # calculate optical flow
                 flow = cv2.calcOpticalFlowFarneback(
-                    previous_frame, current_frame, None, 0.5, 5, 15, 3, 5, 1.2, 0,
+                    previous_frame,
+                    current_frame,
+                    None,
+                    0.5,
+                    5,
+                    15,
+                    3,
+                    5,
+                    1.2,
+                    0,
                 )
                 # end of timer
                 end_of = time.time()
@@ -95,7 +104,9 @@ def dense_motion(video, device):
 
                 # convert from cartesian to polar coordinates to get magnitude and angle
                 magnitude, angle = cv2.cartToPolar(
-                    flow[..., 0], flow[..., 1], angleInDegrees=True,
+                    flow[..., 0],
+                    flow[..., 1],
+                    angleInDegrees=True,
                 )
 
                 # set hue according to the angle of optical flow
@@ -103,7 +114,12 @@ def dense_motion(video, device):
 
                 # set value according to the normalized magnitude of optical flow
                 hsv[..., 2] = cv2.normalize(
-                    magnitude, None, 0.0, 1.0, cv2.NORM_MINMAX, -1,
+                    magnitude,
+                    None,
+                    0.0,
+                    1.0,
+                    cv2.NORM_MINMAX,
+                    -1,
                 )
 
                 # multiply each pixel value to 255
@@ -206,11 +222,21 @@ def dense_motion(video, device):
 
                 # create optical flow instance
                 gpu_flow = cv2.cuda_FarnebackOpticalFlow.create(
-                    5, 0.5, False, 15, 3, 5, 1.2, 0,
+                    5,
+                    0.5,
+                    False,
+                    15,
+                    3,
+                    5,
+                    1.2,
+                    0,
                 )
                 # calculate optical flow
                 gpu_flow = cv2.cuda_FarnebackOpticalFlow.calc(
-                    gpu_flow, gpu_previous, gpu_current, None,
+                    gpu_flow,
+                    gpu_previous,
+                    gpu_current,
+                    None,
                 )
 
                 # end of timer
@@ -228,7 +254,9 @@ def dense_motion(video, device):
 
                 # convert from cartesian to polar coordinates to get magnitude and angle
                 gpu_magnitude, gpu_angle = cv2.cuda.cartToPolar(
-                    gpu_flow_x, gpu_flow_y, angleInDegrees=True,
+                    gpu_flow_x,
+                    gpu_flow_y,
+                    angleInDegrees=True,
                 )
 
                 # set value to normalized magnitude from 0 to 1
@@ -245,7 +273,9 @@ def dense_motion(video, device):
                 cv2.cuda.merge([gpu_h, gpu_s, gpu_v], gpu_hsv)
 
                 # multiply each pixel value to 255
-                gpu_hsv.convertTo(rtype=cv2.CV_8U, alpha=255.0, beta=0.0, dst=gpu_hsv_8u)
+                gpu_hsv.convertTo(
+                    rtype=cv2.CV_8U, alpha=255.0, beta=0.0, dst=gpu_hsv_8u
+                )
 
                 # convert hsv to bgr
                 gpu_bgr = cv2.cuda.cvtColor(gpu_hsv_8u, cv2.COLOR_HSV2BGR)

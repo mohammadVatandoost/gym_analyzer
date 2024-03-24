@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 import keras
@@ -57,7 +56,9 @@ def build_feature_extractor():
     return keras.Model(inputs, outputs, name="feature_extractor")
 
 
-def prepare_all_videos(feature_extractor, exercise_videos: list[ExerciseVideoData], label_processor):
+def prepare_all_videos(
+    feature_extractor, exercise_videos: list[ExerciseVideoData], label_processor
+):
     num_samples = len(exercise_videos)
     # video_paths = df["video_name"].values.tolist()
     # labels = df["tag"].values
@@ -96,7 +97,8 @@ def prepare_all_videos(feature_extractor, exercise_videos: list[ExerciseVideoDat
             length = min(MAX_SEQ_LENGTH, video_length)
             for j in range(length):
                 temp_frame_features[i, j, :] = feature_extractor.predict(
-                    batch[None, j, :], verbose=0,
+                    batch[None, j, :],
+                    verbose=0,
                 )
             temp_frame_mask[i, :length] = 1  # 1 = not masked, 0 = masked
 
@@ -107,11 +109,18 @@ def prepare_all_videos(feature_extractor, exercise_videos: list[ExerciseVideoDat
     return (frame_features, frame_masks), labels.numpy()
 
 
-def preprocess_on_key_points(feature_extractor, exercise_videos: list[ExerciseVideoData], label_processor, data_path, sequence_length):
-    key_point_extractor = FeatureExtractor(exercise_videos,  feature_extractor,  sequence_length, label_processor, data_path)
+def preprocess_on_key_points(
+    feature_extractor,
+    exercise_videos: list[ExerciseVideoData],
+    label_processor,
+    data_path,
+    sequence_length,
+):
+    key_point_extractor = FeatureExtractor(
+        exercise_videos, feature_extractor, sequence_length, label_processor, data_path
+    )
     sequences, labels, key_point_path = key_point_extractor.extract()
     X = np.array(sequences)
     # Y = np.array(labels)
     Y = to_categorical(labels).astype(int)
     return X, Y
-

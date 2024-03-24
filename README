@@ -2,3 +2,7 @@
 Research about:
     - Angle noise redution
     - Bidirectional RNN/LSTM
+    - can we use feature embedding for keypoints? like feature embedding for words in nlp( apple and orange is similar).
+    we can use CNN for arms and then give the output to LSTM.
+    -  what should be the NN input? Angles of keypoints, keypoints and visibility of keypoints, keypoints feature embedding
+

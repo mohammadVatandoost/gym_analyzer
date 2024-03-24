@@ -21,15 +21,22 @@ class MotionDetection:
         self.frame = video_reader.get_current_frame()
 
         # Parameters for ShiTomasi corner detection
-        self.feature_params = dict(maxCorners=100, qualityLevel=0.3, minDistance=7, blockSize=7)
+        self.feature_params = dict(
+            maxCorners=100, qualityLevel=0.3, minDistance=7, blockSize=7
+        )
         # Parameters for Lucas Kanade optical flow
-        self.lk_params = dict(winSize=(15, 15), maxLevel=2,
-                         criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
+        self.lk_params = dict(
+            winSize=(15, 15),
+            maxLevel=2,
+            criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03),
+        )
         # Random colors for tracking
         self.color = np.random.randint(0, 255, (100, 3))
         self.mask = np.zeros_like(self.frame)
         self.frame_gray = cv2.cvtColor(self.frame, cv2.COLOR_BGR2GRAY)
-        self.p0 = cv2.goodFeaturesToTrack(self.frame_gray , mask=None, **self.feature_params)
+        self.p0 = cv2.goodFeaturesToTrack(
+            self.frame_gray, mask=None, **self.feature_params
+        )
 
         self.hsv = np.zeros_like(self.frame)
         self.hsv[..., 1] = 255
@@ -71,11 +78,21 @@ class MotionDetection:
 
         # create optical flow instance
         gpu_flow = cv2.cuda_FarnebackOpticalFlow.create(
-            5, 0.5, False, 20, 4, 5, 1.2, 0,
+            5,
+            0.5,
+            False,
+            20,
+            4,
+            5,
+            1.2,
+            0,
         )
         # calculate optical flow
         gpu_flow = cv2.cuda_FarnebackOpticalFlow.calc(
-            gpu_flow, self.gpu_previous, gpu_current, None,
+            gpu_flow,
+            self.gpu_previous,
+            gpu_current,
+            None,
         )
 
         gpu_flow_x = cv2.cuda_GpuMat(gpu_flow.size(), cv2.CV_32FC1)
@@ -84,9 +101,10 @@ class MotionDetection:
 
         # convert from cartesian to polar coordinates to get magnitude and angle
         gpu_magnitude, gpu_angle = cv2.cuda.cartToPolar(
-            gpu_flow_x, gpu_flow_y, angleInDegrees=True,
+            gpu_flow_x,
+            gpu_flow_y,
+            angleInDegrees=True,
         )
-
 
         # set value to normalized magnitude from 0 to 1
         self.gpu_v = cv2.cuda.normalize(gpu_magnitude, 0.0, 1.0, cv2.NORM_MINMAX, -1)
@@ -98,25 +116,32 @@ class MotionDetection:
 
         # Apply threshold to remove small motions
         motion_threshold = 0.3  # Set your threshold value here
-        if(isBGR):
+        if isBGR:
             bgr = self.create_bgr(gpu_angle, motion_threshold)
             return frame, bgr
         contours = self.find_contours(self.gpu_v, motion_threshold)
         return frame, contours
 
     def find_contours(self, gpu_v, motion_threshold):
-        _, binary_motion = cv2.cuda.threshold(gpu_v, motion_threshold, 255, cv2.THRESH_BINARY)
+        _, binary_motion = cv2.cuda.threshold(
+            gpu_v, motion_threshold, 255, cv2.THRESH_BINARY
+        )
         binary_motion = binary_motion.download()  # Download to CPU for contour analysis
         binary_motion = binary_motion.astype(np.uint8)  # Convert to uint8
-        contours, _ = cv2.findContours(binary_motion, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        return  contours
+        contours, _ = cv2.findContours(
+            binary_motion, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+        return contours
 
     def draw_contours(self, frame, contours):
-        return cv2.drawContours(frame, contours, -1, (0, 255, 0), 2)  # Draw with green lines
-
+        return cv2.drawContours(
+            frame, contours, -1, (0, 255, 0), 2
+        )  # Draw with green lines
 
     def create_bgr(self, gpu_angle, motion_threshold):
-        self.gpu_v = cv2.cuda.threshold(self.gpu_v, motion_threshold, 1, cv2.THRESH_TOZERO)[1]
+        self.gpu_v = cv2.cuda.threshold(
+            self.gpu_v, motion_threshold, 1, cv2.THRESH_TOZERO
+        )[1]
 
         # get angle of optical flow
         angle = gpu_angle.download()
@@ -129,7 +154,9 @@ class MotionDetection:
         cv2.cuda.merge([self.gpu_h, self.gpu_s, self.gpu_v], self.gpu_hsv)
 
         # multiply each pixel value to 255
-        self.gpu_hsv.convertTo(rtype=cv2.CV_8U, alpha=255.0, beta=0.0, dst=self.gpu_hsv_8u)
+        self.gpu_hsv.convertTo(
+            rtype=cv2.CV_8U, alpha=255.0, beta=0.0, dst=self.gpu_hsv_8u
+        )
 
         # convert hsv to bgr
         gpu_bgr = cv2.cuda.cvtColor(self.gpu_hsv_8u, cv2.COLOR_HSV2BGR)
@@ -137,7 +164,6 @@ class MotionDetection:
         # send result from GPU back to CPU
         bgr = gpu_bgr.download()
         return bgr
-
 
     def motion_detect(self):
         next_frame = self.video_reader.get_current_frame()
@@ -154,14 +180,13 @@ class MotionDetection:
         next_frame_gray = cv2.cvtColor(next_frame, cv2.COLOR_BGR2GRAY)
         if self.p0 is None or len(self.p0) == 0:
             self.frame_gray = next_frame_gray.copy()
-            self.p0 = cv2.goodFeaturesToTrack(self.frame_gray, mask=None, **self.feature_params)
+            self.p0 = cv2.goodFeaturesToTrack(
+                self.frame_gray, mask=None, **self.feature_params
+            )
             return None, None, "No features found to track"
         # Calculate optical flow
         p1, st, err = cv2.calcOpticalFlowPyrLK(
-            self.frame_gray, next_frame_gray,
-            self.p0,
-            None,
-            **self.lk_params
+            self.frame_gray, next_frame_gray, self.p0, None, **self.lk_params
         )
 
         # Select good points
@@ -172,17 +197,17 @@ class MotionDetection:
 
         return good_old, good_new, None
 
-
-
     def marks_flow_vectors(self, frame, good_new, good_old):
         # Create a mask image for drawing purposes
         self.mask = np.zeros_like(frame)
         for i, (new, old) in enumerate(zip(good_new, good_old)):
             a, b = new.ravel()
             c, d = old.ravel()
-            self.mask = cv2.line(self.mask, (int(a), int(b)), (int(c), int(d)), self.color[i].tolist(), 2)
+            self.mask = cv2.line(
+                self.mask, (int(a), int(b)), (int(c), int(d)), self.color[i].tolist(), 2
+            )
             frame = cv2.circle(frame, (int(a), int(b)), 5, self.color[i].tolist(), -1)
-        img = cv2.add(frame, self.mask )
+        img = cv2.add(frame, self.mask)
         self.p0 = good_new.reshape(-1, 1, 2)
         return img
 

@@ -3,6 +3,7 @@ import unittest
 
 import cv2
 import numpy as np
+
 np.finfo(np.dtype("float32"))
 np.finfo(np.dtype("float64"))
 
@@ -10,7 +11,7 @@ from pkg.pose.mediapipe_pose import MediaPipePose
 from pkg.video_reader.video_reader import VideoReader
 
 
-video_path = '../../../../dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4'
+video_path = "../../../../dataset/dataset_1/archive/barbell biceps curl/barbell biceps curl_44.mp4"
 
 
 class MyTestCase(unittest.TestCase):
@@ -20,11 +21,7 @@ class MyTestCase(unittest.TestCase):
         self.pose = MediaPipePose(self.sample_video_reader)
 
     def test_calculateAngle(self):
-        angle = self.pose.calculateAngle(
-            (558, 326, 0),
-            (642, 333, 0),
-            (718, 321, 0)
-        )
+        angle = self.pose.calculateAngle((558, 326, 0), (642, 333, 0), (718, 321, 0))
         expected_angle = 166
         self.assertEqual(expected_angle, int(angle))  # add assertion here
 
@@ -41,8 +38,5 @@ class MyTestCase(unittest.TestCase):
             frame_count = self.sample_video_reader.next_frame()
 
 
-
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

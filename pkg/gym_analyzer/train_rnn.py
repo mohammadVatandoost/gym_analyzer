@@ -82,14 +82,21 @@ def run_experiment(train_data, train_labels, test_data, test_labels, label_proce
     return history, seq_model
 
 
-def train_rnn_keras(x_train: list[ExerciseVideoData], x_test: list[ExerciseVideoData], label_processor):
+def train_rnn_keras(
+    x_train: list[ExerciseVideoData], x_test: list[ExerciseVideoData], label_processor
+):
     feature_extractor = build_feature_extractor()
-    train_data, train_labels = prepare_all_videos(feature_extractor, x_train, label_processor)
-    test_data, test_labels = prepare_all_videos(feature_extractor, x_test, label_processor)
+    train_data, train_labels = prepare_all_videos(
+        feature_extractor, x_train, label_processor
+    )
+    test_data, test_labels = prepare_all_videos(
+        feature_extractor, x_test, label_processor
+    )
     logging.info(f"Frame features in train set: {train_data[0].shape}")
     logging.info(f"Frame masks in train set: {train_data[1].shape}")
-    _, sequence_model = run_experiment(train_data, train_labels,
-                                       test_data, test_labels, label_processor)
+    _, sequence_model = run_experiment(
+        train_data, train_labels, test_data, test_labels, label_processor
+    )
 
 
 # def evaluate(x_train: list[ExerciseVideoData])

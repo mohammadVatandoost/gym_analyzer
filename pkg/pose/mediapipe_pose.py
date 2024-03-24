@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from time import time
 import mediapipe as mp
+
 # import mediapipe
 from mediapipe.framework.formats import landmark_pb2
 from mediapipe import solutions
@@ -13,10 +14,12 @@ from pkg.video_reader.video_reader import VideoReader
 
 import matplotlib.pyplot as plt
 
-model_path = "/home/mohammad/work/GYM/code/gym_analyzer/model/pose_landmarker_heavy.task"
+model_path = (
+    "/home/mohammad/work/GYM/code/gym_analyzer/model/pose_landmarker_heavy.task"
+)
 
 
-class MediaPipePose():
+class MediaPipePose:
 
     def __init__(self, video_reader: VideoReader = None) -> None:
         self.video_reader = video_reader
@@ -40,10 +43,10 @@ class MediaPipePose():
         self.pose = self.mp_pose.Pose(
             static_image_mode=True,
             # running_mode=VIDEO,
-            min_detection_confidence=0.3,
+            min_detection_confidence=0.5,
             min_tracking_confidence=0.5,
             model_complexity=2,
-            smooth_landmarks=True
+            smooth_landmarks=True,
         )
 
     def estimate_frame(self, frame, frame_timestamp_ms) -> PoseLandmarkerResult:
@@ -81,34 +84,49 @@ class MediaPipePose():
 
             # Draw the pose landmarks.
             pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-            pose_landmarks_proto.landmark.extend([
-                landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
-            ])
+            pose_landmarks_proto.landmark.extend(
+                [
+                    landmark_pb2.NormalizedLandmark(
+                        x=landmark.x, y=landmark.y, z=landmark.z
+                    )
+                    for landmark in pose_landmarks
+                ]
+            )
             self.mp_drawing.draw_landmarks(
                 annotated_image,
                 pose_landmarks_proto,
                 self.mp_pose.POSE_CONNECTIONS,
-                solutions.drawing_styles.get_default_pose_landmarks_style())
+                solutions.drawing_styles.get_default_pose_landmarks_style(),
+            )
         return annotated_image
 
     def flatten_key_points(self, result: PoseLandmarkerResult) -> np.array:
-        '''
+        """
         This function extracts the pose landmarks from the results object.
             Args:
                 PoseLandmarkerResult: The results object returned by the Pose class.
             Returns:
                 pose_keypoints: A list of pose landmarks.
-        '''
-        pose = np.array([[res.x, res.y, res.z, res.visibility] for res in result.pose_landmarks[0]]).flatten() if result.pose_landmarks else np.zeros(33*4)
+        """
+        pose = (
+            np.array(
+                [
+                    [res.x, res.y, res.z, res.visibility]
+                    for res in result.pose_landmarks[0]
+                ]
+            ).flatten()
+            if result.pose_landmarks
+            else np.zeros(33 * 4)
+        )
         # self.plot_keypoints(PoseLandmarkerResult.pose_landmarks[0])
         return pose
 
     def plot_keypoints(self, pose_keypoints):
-        '''
+        """
         This function plots the pose landmarks on a 2D plot.
             Args:
                 pose_keypoints: A list of pose landmarks.
-        '''
+        """
         x, y, labels = [], [], []
         for keypoint in pose_keypoints:
             x.append(keypoint.x)
@@ -116,11 +134,11 @@ class MediaPipePose():
         # Create a figure and axis object.
         fig, ax = plt.subplots(figsize=(10, 10))
         # Plot the pose landmarks on the axis.
-        ax.scatter(x, y, c='r', s=10)
+        ax.scatter(x, y, c="r", s=10)
         # Set the axis labels and title.
-        ax.set_xlabel('X')
-        ax.set_ylabel('Y')
-        ax.set_title('Pose Landmarks')
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_title("Pose Landmarks")
         # Show the plot.
         plt.show()
         # Save the plot as a PNG image.
@@ -131,13 +149,15 @@ class MediaPipePose():
         plt.close()
         return pose_keypoints
 
-    def calculate_keypoint_angle(self, pose_key_points: list[landmark_pb2.NormalizedLandmark]):
+    def calculate_keypoint_angle(
+        self, pose_key_points: list[landmark_pb2.NormalizedLandmark]
+    ):
         angels = []
         for connection in angle_connection:
             angel = self.calculateAngle(
                 pose_key_points[connection[0]],
                 pose_key_points[connection[1]],
-                pose_key_points[connection[2]]
+                pose_key_points[connection[2]],
             )
             angels.append(angel)
 
@@ -145,11 +165,11 @@ class MediaPipePose():
 
     @staticmethod
     def calculateAngle(
-            landmark1: landmark_pb2.NormalizedLandmark,
-            landmark2: landmark_pb2.NormalizedLandmark,
-            landmark3: landmark_pb2.NormalizedLandmark
+        landmark1: landmark_pb2.NormalizedLandmark,
+        landmark2: landmark_pb2.NormalizedLandmark,
+        landmark3: landmark_pb2.NormalizedLandmark,
     ):
-        '''
+        """
         This function calculates angle between three different landmarks.
             Args:
                 landmark1: The first landmark containing the x,y and z coordinates.
@@ -157,11 +177,11 @@ class MediaPipePose():
                 landmark3: The third landmark containing the x,y and z coordinates.
             Returns:
                 angle: The calculated angle between the three landmarks.
-        '''
+        """
         # Calculate the angle between the three points
         angle = math.degrees(
-            math.atan2(landmark3.y - landmark2.y, landmark3.x - landmark2.x) -
-            math.atan2(landmark1.y - landmark2.y, landmark1.x - landmark2.x)
+            math.atan2(landmark3.y - landmark2.y, landmark3.x - landmark2.x)
+            - math.atan2(landmark1.y - landmark2.y, landmark1.x - landmark2.x)
         )
         # Check if the angle is less than zero.
         if angle < 0:
